@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 
-releases_path=https://api.github.com/repositories/115039706/tags
+tags_path="https://api.github.com/repos/rust-lang/rust-analyzer/tags"
 
-cmd="curl -s"
+response=$(curl -s "$tags_path")
 
-# add auth token in CI environment
-if [ -n "$GITHUB_API_TOKEN" ]; then
- cmd="$cmd -H 'Authorization: token $GITHUB_API_TOKEN'"
+versions=$(echo "$response" | jq -r '.[].name' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort)
+
+if [ -z "$versions" ]; then
+ echo "Error: No versions found or invalid response format" >&2
+ exit 1
 fi
 
-cmd="$cmd $releases_path"
-
-# Fetch all tag names, and get only second column. Then remove all unnecesary characters.
-versions=$(eval $cmd | sed -n 's/.*"name": "\([0-9\-]*\)",/\1/p' | sed -n '1!G;h;$p')
-echo nightly $versions
+echo "$versions"
+echo "nightly"
